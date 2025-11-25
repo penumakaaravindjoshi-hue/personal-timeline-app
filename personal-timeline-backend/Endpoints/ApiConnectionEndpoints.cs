@@ -14,8 +14,14 @@ public static class ApiConnectionEndpoints
 {
     public static void MapApiConnectionEndpoints(this WebApplication app)
     {
-        var apiGroup = app.MapGroup("/api/connections").RequireAuthorization();
+        var apiGroup = app.MapGroup("/api/connections").RequireAuthorization().WithTags("API Connections");
 
+        /// <summary>
+        /// Gets all active and inactive API connections for the current user.
+        /// </summary>
+        /// <returns>A list of API connections with their provider, status, and last sync time.</returns>
+        /// <response code="200">Returns the list of API connections.</response>
+        /// <response code="401">If the user is not authenticated.</response>
         apiGroup.MapGet("/", async (TimelineContext dbContext, ClaimsPrincipal principal) =>
         {
             var userId = int.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -26,6 +32,14 @@ public static class ApiConnectionEndpoints
             return Results.Ok(connections);
         });
 
+        /// <summary>
+        /// Deactivates an API connection for a specific provider.
+        /// </summary>
+        /// <param name="provider">The name of the API provider to disconnect (e.g., "GitHub", "Notion").</param>
+        /// <returns>No content if successful.</returns>
+        /// <response code="204">If the connection was successfully deactivated.</response>
+        /// <response code="401">If the user is not authenticated.</response>
+        /// <response code="404">If a connection for the specified provider is not found.</response>
         apiGroup.MapDelete("/{provider}", async (string provider, TimelineContext dbContext, ClaimsPrincipal principal) =>
         {
             var userId = int.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -43,6 +57,15 @@ public static class ApiConnectionEndpoints
             return Results.NoContent();
         });
 
+        /// <summary>
+        /// Triggers a manual data synchronization for a specific API provider.
+        /// </summary>
+        /// <param name="provider">The name of the API provider to sync (e.g., "GitHub", "Notion").</param>
+        /// <returns>A list of newly created timeline entries from the sync.</returns>
+        /// <response code="200">Returns the list of new timeline entries.</response>
+        /// <response code="400">If the sync process fails due to an API error or other issue.</response>
+        /// <response code="401">If the user is not authenticated.</response>
+        /// <response code="404">If a service for the specified provider is not found.</response>
         apiGroup.MapPost("/{provider}/sync", SyncApiHandler);
     }
 

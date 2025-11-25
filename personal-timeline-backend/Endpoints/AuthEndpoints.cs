@@ -17,8 +17,13 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this WebApplication app)
     {
-        var authGroup = app.MapGroup("/auth");
+        var authGroup = app.MapGroup("/auth").WithTags("Authentication");
 
+        /// <summary>
+        /// Initiates the Google OAuth2 login flow.
+        /// </summary>
+        /// <param name="returnUrl">Optional URL to redirect to after successful authentication.</param>
+        /// <returns>A challenge result that redirects the user to Google's login page.</returns>
         authGroup.MapGet("/google", ([FromQuery] string? returnUrl) =>
         {
             // Default to a frontend callback URL if not provided
@@ -27,6 +32,12 @@ public static class AuthEndpoints
             return Results.Challenge(properties, new[] { GoogleDefaults.AuthenticationScheme });
         });
 
+        /// <summary>
+        /// Initiates the GitHub OAuth2 flow to connect a user's GitHub account. Requires authentication.
+        /// </summary>
+        /// <param name="returnUrl">Optional URL to redirect to after successful connection.</param>
+        /// <param name="principal">The authenticated user's principal.</param>
+        /// <returns>A challenge result that redirects the user to GitHub's authorization page.</returns>
         authGroup.MapGet("/github", ([FromQuery] string? returnUrl, ClaimsPrincipal principal) =>
         {
             // Default to a frontend callback URL if not provided
@@ -43,6 +54,12 @@ public static class AuthEndpoints
             return Results.Challenge(properties, new[] { "GitHub" });
         }).RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = $"{CookieAuthenticationDefaults.AuthenticationScheme},{JwtBearerDefaults.AuthenticationScheme}" });
 
+        /// <summary>
+        /// Initiates the Notion OAuth2 flow to connect a user's Notion account. Requires authentication.
+        /// </summary>
+        /// <param name="returnUrl">Optional URL to redirect to after successful connection.</param>
+        /// <param name="principal">The authenticated user's principal.</param>
+        /// <returns>A challenge result that redirects the user to Notion's authorization page.</returns>
         authGroup.MapGet("/notion", ([FromQuery] string? returnUrl, ClaimsPrincipal principal) =>
         {
             returnUrl ??= "https://localhost:5173/settings/api-connections";
@@ -57,6 +74,12 @@ public static class AuthEndpoints
             return Results.Challenge(properties, new[] { "Notion" });
         }).RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = $"{CookieAuthenticationDefaults.AuthenticationScheme},{JwtBearerDefaults.AuthenticationScheme}" });
 
+        /// <summary>
+        /// Gets the current authenticated user's profile and a new JWT. Requires authentication.
+        /// </summary>
+        /// <returns>The user's profile information and a JWT.</returns>
+        /// <response code="200">Returns the user's profile and a token.</response>
+        /// <response code="404">If the user is not found in the database.</response>
         authGroup.MapGet("/me", (ClaimsPrincipal principal, TimelineContext dbContext, TokenService tokenService) =>
         {
             var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -71,6 +94,11 @@ public static class AuthEndpoints
 
         }).RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = $"{CookieAuthenticationDefaults.AuthenticationScheme},{JwtBearerDefaults.AuthenticationScheme}" });
 
+        /// <summary>
+        /// Logs the user out by clearing the authentication cookie.
+        /// </summary>
+        /// <returns>An OK result.</returns>
+        /// <response code="200">If the user was successfully logged out.</response>
         authGroup.MapPost("/logout", async (HttpContext httpContext) =>
         {
             await httpContext.SignOutAsync();

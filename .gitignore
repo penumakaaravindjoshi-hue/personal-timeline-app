@@ -10,7 +10,6 @@
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
 # Mono Auto Generated Files
 mono_crash.*
 
