@@ -1,0 +1,16 @@
+# Add files here to ignore them from prettier formatting
+/dist
+/coverage
+mocks
+.next
+tsconfig.json
+tsconfig.spec.json
+project.json
+next.config.js
+.eslintrc.json
+README.md
+.nx
+.vscode
+
+/.nx/cache
+/.nx/workspace-data

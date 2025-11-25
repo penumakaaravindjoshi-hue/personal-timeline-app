@@ -1,0 +1,39 @@
+services:
+  backend:
+    container_name: personal_timeline_backend
+    build:
+      context: ./personal-timeline-backend
+      dockerfile: Dockerfile
+    ports:
+      - "7027:8081" # Map host 7027 to container's HTTPS port 8081
+    volumes:
+      - backend_db:/app/database
+      - ./certs:/https/certs:ro # Mount certificates read-only
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:8081;http://+:8080
+      - ASPNETCORE_KESTREL__CERTIFICATES__DEFAULT__PATH=/https/certs/localhost.crt
+      - ASPNETCORE_KESTREL__CERTIFICATES__DEFAULT__KEYPATH=/https/certs/localhost.key
+      - ConnectionStrings__DefaultConnection=Data Source=/app/database/timeline.db
+      - Jwt__Issuer=https://97017e158579.ngrok-free.app
+      - Jwt__Audience=https://97017e158579.ngrok-free.app
+      - CORS_ORIGIN=https://localhost:5173
+
+  frontend:
+    container_name: personal_timeline_frontend
+    build:
+      context: ./personal-timeline-frontend
+      dockerfile: Dockerfile
+      args:
+        # The frontend code will now connect to the backend via HTTPS
+        VITE_API_BASE_URL: https://localhost:7027
+    ports:
+      - "5173:443" # Map host 5173 to container's HTTPS port 443
+    volumes:
+      - ./certs:/etc/nginx/ssl:ro # Mount certificates for Nginx
+    depends_on:
+      - backend
+
+volumes:
+  backend_db:
+    driver: local
