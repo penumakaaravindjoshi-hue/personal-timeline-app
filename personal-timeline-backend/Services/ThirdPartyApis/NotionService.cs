@@ -152,11 +152,16 @@ namespace personal_timeline_backend.Services.ThirdPartyApis
                         var dateProp = props.EnumerateObject()
                             .FirstOrDefault(p => p.Value.TryGetProperty("date", out _));
 
-                        if (dateProp.Value.ValueKind != JsonValueKind.Undefined &&
-                            dateProp.Value.GetProperty("date").TryGetProperty("start", out var dateValue))
+                        if (dateProp.Value.ValueKind != JsonValueKind.Undefined)
                         {
-                            if (DateTime.TryParse(dateValue.GetString(), out var parsedDate))
+                            var dateObject = dateProp.Value.GetProperty("date");
+                            if (dateObject.ValueKind == JsonValueKind.Object &&
+                                dateObject.TryGetProperty("start", out var dateValue) &&
+                                dateValue.ValueKind != JsonValueKind.Null &&
+                                DateTime.TryParse(dateValue.GetString(), out var parsedDate))
+                            {
                                 createdAt = parsedDate;
+                            }
                         }
 
                         // === CATEGORY (select) ===
